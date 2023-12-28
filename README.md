@@ -1,0 +1,1 @@
+# imgcompress-S3Trigger-quarkus
