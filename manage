@@ -1,0 +1,51 @@
+#!/bin/bash
+FUNCTION_NAME="imgcompress-S3Trigger-quarkus"
+FUNCTION_CLASS="QuarkusStreamHandler"
+FUNCTION_METHOD="handleRequest"
+FUNCTION_PACKAGE="io.quarkus.amazon.lambda.runtime"
+FUNCTION_MEM=512
+FUNCTION_RUNTIME=java21
+FUNCTION_ROLE=arn:aws:iam::213855317842:role/s3adminlambda
+LAMBDA_SRCCODE_BUCKET=amroot-work
+# io.quarkus.amazon.lambda.runtime.QuarkusStreamHandler::handleRequest
+# The way this hander works is the above needs to be given in create , the actual handler is then picked up
+# from @Named attribute by Quarkus , if actual Handler is given here lambda will run but Dependency injection will not
+# resulting in null pointer exceptions
+
+# Display the menu
+echo "Choose an option:"
+echo "1. upload lambda to s3"
+echo "2. publish lambda"
+echo "3. run test s3 event"
+echo "4. Update Lambda Config"
+
+# Read user input
+read -p "Enter your choice: " choice
+
+# Execute the selected command
+case $choice in
+    1)
+        echo "Executing Command 1"
+        aws s3 cp ./target/function.zip s3://$LAMBDA_SRCCODE_BUCKET/lambda/$FUNCTION_NAME.zip
+        ;;
+    2)
+        echo "Update Lambda function Src code"
+        aws lambda update-function-code --function-name $FUNCTION_NAME --s3-bucket $LAMBDA_SRCCODE_BUCKET --s3-key lambda/$FUNCTION_NAME.zip  --publish
+        ;;
+    3)
+        echo "run test s3 upload event "
+        # Add the command 3 here
+        aws s3 cp /Users/mohamed/amroot/temp/AM-Passport2022.png s3://ameenbayt/pics/
+        ;;
+    4)
+        echo "Updating Lambda Configuration..."
+       aws lambda update-function-configuration --function-name $FUNCTION_NAME \
+                   --handler "$FUNCTION_PACKAGE.$FUNCTION_CLASS::$FUNCTION_METHOD" \
+                   --role $FUNCTION_ROLE \
+                   --runtime $FUNCTION_RUNTIME \
+                   --memory-size  $FUNCTION_MEM
+        ;;
+    *)
+        echo "Invalid choice"
+        ;;
+esac
