@@ -2,16 +2,16 @@ package org.hac.aws.s3util;
 
 import com.googlecode.pngtastic.core.PngImage;
 import com.googlecode.pngtastic.core.PngOptimizer;
-import io.quarkus.runtime.StartupEvent;
+
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
+
 import jakarta.inject.Inject;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
+
+import org.hac.util.AppUtil;
+
+
 import software.amazon.awssdk.core.ResponseBytes;
-import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.S3Client;
+
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -20,8 +20,7 @@ import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
+
 import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 
@@ -30,24 +29,6 @@ import net.coobird.thumbnailator.Thumbnails;
 
 @ApplicationScoped
 public class S3ImageCompress {
-
-    private  Region region = Region.EU_WEST_1;
-    private AwsCredentialsProvider credentialsProvider;
-    private  S3Client s3client;
-
-    void startup(@Observes StartupEvent event) {
-    }
-
-    S3ImageCompress(){
-        credentialsProvider = EnvironmentVariableCredentialsProvider.create();
-
-        s3client = S3Client.builder().region(region)
-                .credentialsProvider(credentialsProvider)
-                .build();
-        System.out.println("Clients initialized ..");
-    }
-
-
 
     /*
     public static double imgCompressionScale = 0.50;
@@ -59,44 +40,18 @@ public class S3ImageCompress {
     //public static String destBucketName = "admin.beehive.holiday";
     public static String destBucketName = "amrootdata--eun1-az1--x-s3";
 */
-    @Inject
-    @ConfigProperty(name = "lambda.localCOMPfolder", defaultValue = "/tmp/compress/")
-    private String localCompressFolder;
-
-    @Inject
-    @ConfigProperty(name = "lambda.localSRCFolder", defaultValue = "/tmp/")
-    private  String localSRCFolder;
-
-    @Inject
-    @ConfigProperty(name = "s3.destBucketName", defaultValue = "amrootdata--eun1-az1--x-s3")
-    private  String s3DestBucketName;
 
 
     @Inject
-    @ConfigProperty(name = "s3.SRCBucketname", defaultValue = "ameenbayt")
-    private  String s3SRCBucketname;
+    AppUtil appUtil;
 
-    @Inject
-    @ConfigProperty(name = "s3.SRCBucketPrefix", defaultValue = "/pics/")
-    private  String s3SRCBucketPrefix;
-
-    @Inject
-    @ConfigProperty(name = "aws.region", defaultValue = "eu-west-1")
-    private  String awsRegion;
-
-    @Inject
-    @ConfigProperty(name = "img.compressionScale", defaultValue = "0.50")
-    private  double compressionScale;
-
-    @Inject
-    @ConfigProperty(name = " img.quality", defaultValue = "0.2")
-    private  double imgQuality;
+    
 
     public  void compressS3File(String bucketName,String keyName){
 
         File S3File = getFileFromS3(bucketName, keyName);
         String  compS3File = compressLocalFile(S3File);
-        boolean status = updateS3(s3DestBucketName,compS3File,S3File);
+        boolean status = updateS3(appUtil.getS3DestBucketName(),compS3File,S3File);
 
     }
 
@@ -118,14 +73,14 @@ public class S3ImageCompress {
             fileNameWithExtension = keyName;
 
         // Extract the path before the file name
-        File baseTempDir = new File(localSRCFolder+pathBeforeFileName+"/");
+        File baseTempDir = new File(appUtil.getLocalSRCFolder()+pathBeforeFileName+"/");
         baseTempDir.mkdirs();
         System.out.println("Directories Created :"+baseTempDir.getAbsolutePath());
 
-        File myFile = new File(localSRCFolder+keyName);
+        File myFile = new File(appUtil.getLocalSRCFolder()+keyName);
 
         try{
-            ResponseBytes<GetObjectResponse> objectBytes = s3client.getObjectAsBytes(getObjectRequest);
+            ResponseBytes<GetObjectResponse> objectBytes = appUtil.s3client.getObjectAsBytes(getObjectRequest);
             byte[] data = objectBytes.asByteArray();
 
             // Write the data to a local file.
@@ -144,7 +99,7 @@ public class S3ImageCompress {
         long startTime = System.currentTimeMillis();
         System.out.println("InWork-createTT");
 
-        File destinationDir = new File(localCompressFolder);
+        File destinationDir = new File(appUtil.getLocalCompressFolder());
         destinationDir.mkdirs();
 
         String destFile = destinationDir + "/" + s3File.getName();
@@ -165,15 +120,15 @@ public class S3ImageCompress {
             try {
                 BufferedImage originalImage = ImageIO.read(s3File);
                 Thumbnails.of(originalImage)
-                        .scale(compressionScale)
-                        .outputQuality(imgQuality)
+                        .scale(appUtil.getCompressionScale())
+                        .outputQuality(appUtil.getImgQuality())
                         .toFile(destFile);
                 System.out.println("Compressed img file :"+destFile);
             } catch (IOException ioe) {
                 System.out.println(ioe.getMessage());
             }
       //  } if for png
-        System.out.println("compressLocalFile took: "+TimeUnit.MILLISECONDS.toMillis(System.currentTimeMillis() - startTime));
+        System.out.println("compressLocalFile took: "+TimeUnit.MILLISECONDS.toMillis(System.currentTimeMillis() - startTime)+ "Mills");
         return destFile;
     }
 
@@ -185,7 +140,7 @@ public class S3ImageCompress {
                 .key(ogFile.getName())
                 .build();
 
-        PutObjectResponse putResponse = s3client.putObject(putRequest, Paths.get(compS3File));
+        PutObjectResponse putResponse = appUtil.s3client.putObject(putRequest, Paths.get(compS3File));
         System.out.println("eTag : "+putResponse.eTag());
         System.out.println("updateS3 took: "+TimeUnit.MILLISECONDS.toMillis(System.currentTimeMillis() - startTime));
         if (putResponse == null) return false;

@@ -1,0 +1,26 @@
+{
+    "lambda": {
+        "localCOMPfolder": "/tmp/compress/",
+        "localSRCFolder": "/tmp/"
+    },
+    "s3": {
+        "destBucketName": "amfastaccess",
+        "SRCBucketname": "ameenbayt",
+        "SRCBucketPrefix": "/pics/"
+    },
+    "aws": {
+        "region": "eu-west-1"
+    },
+    "img": {
+        "compressionScale": 0.50,
+        "quality": 0.4
+    },
+    "quarkus.s3": {
+        "aws": {
+            "region": "eu-west-1",
+            "credentials": {
+                "type": "instance-profile"
+            }
+        }
+    }
+}

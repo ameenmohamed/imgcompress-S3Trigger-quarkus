@@ -5,7 +5,7 @@ FUNCTION_METHOD="handleRequest"
 FUNCTION_PACKAGE="io.quarkus.amazon.lambda.runtime"
 FUNCTION_MEM=512
 FUNCTION_RUNTIME=java21
-FUNCTION_ROLE=arn:aws:iam::213855317842:role/s3adminlambda
+FUNCTION_ROLE=arn:aws:iam::213855317842:role/Role-ImageCompressLambda
 LAMBDA_SRCCODE_BUCKET=amroot-work
 # io.quarkus.amazon.lambda.runtime.QuarkusStreamHandler::handleRequest
 # The way this hander works is the above needs to be given in create , the actual handler is then picked up
@@ -35,7 +35,7 @@ case $choice in
     3)
         echo "run test s3 upload event "
         # Add the command 3 here
-        aws s3 cp /Users/mohamed/amroot/temp/AM-Passport2022.png s3://ameenbayt/pics/
+        aws s3 cp /Users/mohamed/amroot/temp/moon.jpg s3://ameenbayt/pics/
         ;;
     4)
         echo "Updating Lambda Configuration..."
@@ -43,7 +43,8 @@ case $choice in
                    --handler "$FUNCTION_PACKAGE.$FUNCTION_CLASS::$FUNCTION_METHOD" \
                    --role $FUNCTION_ROLE \
                    --runtime $FUNCTION_RUNTIME \
-                   --memory-size  $FUNCTION_MEM
+                   --memory-size  $FUNCTION_MEM \
+                   --environment '{"Variables":{"ssmConfigKey":"/hac/lambda/imgcompress-S3Trigger-quarkus/config"}}' \
         ;;
     *)
         echo "Invalid choice"
