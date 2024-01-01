@@ -1,30 +1,25 @@
 package org.hac.aws.s3util;
 
-import com.googlecode.pngtastic.core.PngImage;
-import com.googlecode.pngtastic.core.PngOptimizer;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Paths;
+import java.util.concurrent.TimeUnit;
 
-import jakarta.enterprise.context.ApplicationScoped;
-
-import jakarta.inject.Inject;
+import javax.imageio.ImageIO;
 
 import org.hac.util.AppUtil;
 
-
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import net.coobird.thumbnailator.Thumbnails;
 import software.amazon.awssdk.core.ResponseBytes;
-
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
-
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.*;
-
-import java.nio.file.Paths;
-import java.util.concurrent.TimeUnit;
-
-import net.coobird.thumbnailator.Thumbnails;
 
 
 @ApplicationScoped
@@ -74,8 +69,8 @@ public class S3ImageCompress {
 
         // Extract the path before the file name
         File baseTempDir = new File(appUtil.getLocalSRCFolder()+pathBeforeFileName+"/");
-        baseTempDir.mkdirs();
-        System.out.println("Directories Created :"+baseTempDir.getAbsolutePath());
+        
+        System.out.println("Directories Created :"+baseTempDir.getAbsolutePath()+" >:"+baseTempDir.mkdirs(););
 
         File myFile = new File(appUtil.getLocalSRCFolder()+keyName);
 
@@ -145,9 +140,7 @@ public class S3ImageCompress {
         System.out.println("updateS3 took: "+TimeUnit.MILLISECONDS.toMillis(System.currentTimeMillis() - startTime));
         if (putResponse == null) return false;
         else {
-            ogFile.delete();
-            new File(compS3File).delete();
-            System.out.println("Files Deleted ....");
+            System.out.println("OG File Deleted:"+ ogFile.delete() + "Compressed File Delete:"+ new File(compS3File).delete());
             return true;
         }
     }
