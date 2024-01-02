@@ -5,8 +5,8 @@ This project uses Quarkus, the Supersonic Subatomic Java Framework.
 If you want to learn more about Quarkus, please visit its website: https://quarkus.io/ .
 
 ## Explanation of Project 
+[![IMAGE ALT TEXT](http://img.youtube.com/vi/NfHdDiiZNNE/0.jpg)](https://www.youtube.com/watch?v=NfHdDiiZNNE&ab_channel=MohamedAmeenAsif " explaining using  lambda with quarkus and dependency injection")
 
-https://www.youtube.com/watch?v=NfHdDiiZNNE&ab_channel=MohamedAmeenAsif
 
 
 > **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at http://localhost:8080/q/dev/.

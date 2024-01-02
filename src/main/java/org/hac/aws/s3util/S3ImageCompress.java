@@ -12,6 +12,7 @@ import javax.imageio.ImageIO;
 
 import org.hac.util.AppUtil;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import net.coobird.thumbnailator.Thumbnails;
@@ -20,10 +21,17 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
+import software.amazon.cloudwatchlogs.emf.logger.MetricsLogger;
+import software.amazon.cloudwatchlogs.emf.model.DimensionSet;
+import software.amazon.cloudwatchlogs.emf.model.Unit;
+import software.amazon.lambda.powertools.metrics.Metrics;
+import software.amazon.lambda.powertools.metrics.MetricsUtils;
 
 
 @ApplicationScoped
 public class S3ImageCompress {
+
+     MetricsLogger metricsLogger = MetricsUtils.metricsLogger();
 
     /*
     public static double imgCompressionScale = 0.50;
@@ -41,12 +49,23 @@ public class S3ImageCompress {
     AppUtil appUtil;
 
     
+    
+    @PostConstruct
+    @Metrics(namespace = "HacImageUtilLambdas", service = "ImageCompress")
+    public void initMetrics() {
+        metricsLogger.putDimensions(DimensionSet.of("environment", "prod"));
+    }
+    
 
+    
     public  void compressS3File(String bucketName,String keyName){
 
         File S3File = getFileFromS3(bucketName, keyName);
         String  compS3File = compressLocalFile(S3File);
         boolean status = updateS3(appUtil.getS3DestBucketName(),compS3File,S3File);
+        
+        metricsLogger.putMetric("ImgCompressCount", 1, Unit.COUNT);
+        metricsLogger.flush();
 
     }
 
@@ -70,7 +89,7 @@ public class S3ImageCompress {
         // Extract the path before the file name
         File baseTempDir = new File(appUtil.getLocalSRCFolder()+pathBeforeFileName+"/");
         
-        System.out.println("Directories Created :"+baseTempDir.getAbsolutePath()+" >:"+baseTempDir.mkdirs(););
+        System.out.println("Directories Created :"+baseTempDir.getAbsolutePath()+" >:"+baseTempDir.mkdirs());
 
         File myFile = new File(appUtil.getLocalSRCFolder()+keyName);
 
@@ -120,10 +139,14 @@ public class S3ImageCompress {
                         .toFile(destFile);
                 System.out.println("Compressed img file :"+destFile);
             } catch (IOException ioe) {
-                System.out.println(ioe.getMessage());
+                System.out.println(ioe.getMessage()); 
             }
       //  } if for png
-        System.out.println("compressLocalFile took: "+TimeUnit.MILLISECONDS.toMillis(System.currentTimeMillis() - startTime)+ "Mills");
+
+      double spaceDifferenceMB = spaceDifferenceMB( new File(destFile).length(),s3File.length());
+       metricsLogger.putMetric("DiskSpaceSaved", spaceDifferenceMB, Unit.MEGABYTES);
+        metricsLogger.flush();
+      System.out.println("compressLocalFile took: "+TimeUnit.MILLISECONDS.toMillis(System.currentTimeMillis() - startTime)+ "Mills");
         return destFile;
     }
 
@@ -132,7 +155,7 @@ public class S3ImageCompress {
         System.out.println("updating S3 location :"+compS3File);
         PutObjectRequest putRequest =  PutObjectRequest.builder()
                 .bucket(bucketName)
-                .key(ogFile.getName())
+                .key( appUtil.getDestBucketPrefix() + ogFile.getName())
                 .build();
 
         PutObjectResponse putResponse = appUtil.s3client.putObject(putRequest, Paths.get(compS3File));
@@ -143,6 +166,20 @@ public class S3ImageCompress {
             System.out.println("OG File Deleted:"+ ogFile.delete() + "Compressed File Delete:"+ new File(compS3File).delete());
             return true;
         }
+    }
+
+    private  double spaceDifferenceMB(long size1, long size2) {
+        // Ensure non-zero denominator to avoid division by zero
+        if (size1 == 0) {
+            return Double.POSITIVE_INFINITY;
+        }
+         // Calculate the difference in disk space in megabytes (MB)
+         double spaceDifferenceMB = (size1 - size2) / (1024.0 * 1024.0);
+
+        // Calculate the percentage difference
+        double percentageDifference = ((double) (size2 - size1) / size1) * 100.0;
+
+        return spaceDifferenceMB;
     }
 }
 

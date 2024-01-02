@@ -4,9 +4,10 @@
         "localSRCFolder": "/tmp/"
     },
     "s3": {
-        "destBucketName": "amfastaccess",
-        "SRCBucketname": "ameenbayt",
-        "SRCBucketPrefix": "/pics/"
+        "destBucketName": "amin.guru",
+        "destBucketPrefix": "/assets/images/",
+        "SRCBucketname": "amin.guru",
+        "SRCBucketPrefix": "/uploads/"
     },
     "aws": {
         "region": "eu-west-1"

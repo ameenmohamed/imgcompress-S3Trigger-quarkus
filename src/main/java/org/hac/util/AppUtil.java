@@ -1,5 +1,12 @@
 package org.hac.util;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.quarkus.runtime.Startup;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -9,14 +16,6 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.ssm.SsmClient;
 import software.amazon.awssdk.services.ssm.model.GetParameterRequest;
-
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import io.quarkus.runtime.Startup;
 
 
 @Startup
@@ -36,6 +35,9 @@ import io.quarkus.runtime.Startup;
     @ConfigProperty(name = "s3.destBucketName", defaultValue = "amrootdata--eun1-az1--x-s3")
     private  String s3DestBucketName;
 
+    @Inject
+    @ConfigProperty(name = "s3.destBucketPrefix", defaultValue = "/images/")
+    private String destBucketPrefix;
 
     @Inject
     @ConfigProperty(name = "s3.SRCBucketname", defaultValue = "ameenbayt")
@@ -44,6 +46,8 @@ import io.quarkus.runtime.Startup;
     @Inject
     @ConfigProperty(name = "s3.SRCBucketPrefix", defaultValue = "/pics/")
     private  String s3SRCBucketPrefix;
+
+  
 
     @Inject
     @ConfigProperty(name = "aws.region", defaultValue = "eu-west-1")
@@ -102,6 +106,8 @@ import io.quarkus.runtime.Startup;
                  awsRegion = jsonNode.at("/aws/region").asText();
                  compressionScale = jsonNode.at("/img/compressionScale").asDouble();
                  imgQuality = jsonNode.at("/img/quality").asDouble();
+                 destBucketPrefix = jsonNode.at("/s3/destBucketPrefix").asText();
+                 s3DestBucketName = jsonNode.at("/s3/destBucketName").asText();
                 System.out.println("from SSM JSON: "+localCompressFolder + " | " + compressionScale + " | " + imgQuality);
             } catch (JsonProcessingException e) {
                
@@ -180,6 +186,13 @@ import io.quarkus.runtime.Startup;
         this.imgQuality = imgQuality;
     }
 
+    public String getDestBucketPrefix() {
+        return destBucketPrefix;
+    }
+
+    public void setDestBucketPrefix(String destBucketPrefix) {
+        this.destBucketPrefix = destBucketPrefix;
+    }
 
 
 }
