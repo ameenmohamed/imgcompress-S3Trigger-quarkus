@@ -62,11 +62,31 @@ public class S3ImageCompress {
 
         File S3File = getFileFromS3(bucketName, keyName);
         String  compS3File = compressLocalFile(S3File);
-        boolean status = updateS3(appUtil.getS3DestBucketName(),compS3File,S3File);
+        boolean status = updateS3(appUtil.getS3DestBucketName(),compS3File,keyName);
         
         metricsLogger.putMetric("ImgCompressCount", 1, Unit.COUNT);
         metricsLogger.flush();
 
+    }
+
+
+    private String[] getFileAndPath(String keyName){
+        String[] fileAndPath = new String[2];
+        String triggerprefix = appUtil.getS3SRCBucketPrefix();
+        if(keyName.contains(File.separator)) {
+            fileAndPath[0] = keyName.substring(keyName.lastIndexOf(File.separator) + 1);
+            if(triggerprefix !=null || triggerprefix.length() >0){
+                String pathwithTriggerprifix = keyName.substring(0, keyName.lastIndexOf(File.separator));
+                String pathwithoutTriggerprifix = pathwithTriggerprifix.replaceFirst(triggerprefix, "");
+                fileAndPath[1] = pathwithoutTriggerprifix;
+                System.out.println("pathwithoutTriggerprifix:"+pathwithoutTriggerprifix);
+            }else
+                fileAndPath[1] = keyName.substring(0, keyName.lastIndexOf(File.separator));
+        }else{
+            fileAndPath[0] = keyName;
+            fileAndPath[1] = "";
+        }
+        return fileAndPath;
     }
 
     public  File getFileFromS3(String bucketName,String keyName){
@@ -76,22 +96,19 @@ public class S3ImageCompress {
                 .key(keyName)
                 .build();
 
+        String[] fileAndPath = getFileAndPath(keyName);
+        System.out.println("KeyName:"+keyName);
         // Extract the file name with extension
-        String fileNameWithExtension = "";
-        String pathBeforeFileName = "";
-        if(keyName.contains("/")) {
-             fileNameWithExtension = keyName.substring(keyName.lastIndexOf('/') + 1);
-             pathBeforeFileName = keyName.substring(0, keyName.lastIndexOf('/'));
-            System.out.println("file with multiple prefixes ");
-        }else
-            fileNameWithExtension = keyName;
+        String fileNameWithExtension = fileAndPath[0];
+        String pathBeforeFileName = fileAndPath[1];
+ 
 
         // Extract the path before the file name
         File baseTempDir = new File(appUtil.getLocalSRCFolder()+pathBeforeFileName+"/");
         
         System.out.println("Directories Created :"+baseTempDir.getAbsolutePath()+" >:"+baseTempDir.mkdirs());
 
-        File myFile = new File(appUtil.getLocalSRCFolder()+keyName);
+        File myFile = new File(appUtil.getLocalSRCFolder()+fileNameWithExtension);
 
         try{
             ResponseBytes<GetObjectResponse> objectBytes = appUtil.s3client.getObjectAsBytes(getObjectRequest);
@@ -111,7 +128,6 @@ public class S3ImageCompress {
 
     public  String compressLocalFile(File s3File){
         long startTime = System.currentTimeMillis();
-        System.out.println("InWork-createTT");
 
         File destinationDir = new File(appUtil.getLocalCompressFolder());
         destinationDir.mkdirs();
@@ -150,12 +166,19 @@ public class S3ImageCompress {
         return destFile;
     }
 
-    private  boolean updateS3(String bucketName, String compS3File,File ogFile) {
+    private  boolean updateS3(String bucketName, String compS3File,String keyName) {
         long startTime = System.currentTimeMillis();
         System.out.println("updating S3 location :"+compS3File);
+        File ogFile = new File(compS3File);
+           String[] fileAndPath = getFileAndPath(keyName);
+        // Extract the file name with extension
+        String pathBeforeFileName = fileAndPath[1];
+        String filePathwithOGPrefix =  appUtil.getDestBucketPrefix()+ pathBeforeFileName +File.separator+ ogFile.getName();
+        System.out.println("DestFilewithOGFileprefix:"+filePathwithOGPrefix);
+
         PutObjectRequest putRequest =  PutObjectRequest.builder()
                 .bucket(bucketName)
-                .key( appUtil.getDestBucketPrefix() + ogFile.getName())
+                .key(filePathwithOGPrefix)
                 .build();
 
         PutObjectResponse putResponse = appUtil.s3client.putObject(putRequest, Paths.get(compS3File));

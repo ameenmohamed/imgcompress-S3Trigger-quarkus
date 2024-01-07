@@ -5,23 +5,13 @@
     },
     "s3": {
         "destBucketName": "amin.guru",
-        "destBucketPrefix": "/assets/images/",
+        "destBucketPrefix": "assets/images/",
         "SRCBucketname": "amin.guru",
-        "SRCBucketPrefix": "/uploads/"
-    },
-    "aws": {
-        "region": "eu-west-1"
+        "SRCBucketPrefix": "uploads/"
     },
     "img": {
-        "compressionScale": 0.50,
-        "quality": 0.4
-    },
-    "quarkus.s3": {
-        "aws": {
-            "region": "eu-west-1",
-            "credentials": {
-                "type": "instance-profile"
-            }
-        }
+        "compressionScale": 0.5,
+        "quality": 0.4,
+        "validFileExtensions": "jpg, jpeg, png, gif, bmp, tiff, tif, webp, svg, heif, raw, heic"
     }
 }

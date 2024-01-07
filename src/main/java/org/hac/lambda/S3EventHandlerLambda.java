@@ -1,5 +1,11 @@
 package org.hac.lambda;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.hac.aws.s3util.S3ImageCompress;
+import org.hac.util.AppUtil;
+import org.jboss.logging.Logger;
+
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
@@ -9,14 +15,6 @@ import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
-import software.amazon.awssdk.services.ssm.SsmClient;
-
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.hac.aws.s3util.S3ImageCompress;
-import org.hac.util.AppUtil;
-import org.jboss.logging.Logger;
-
-import java.util.concurrent.atomic.AtomicInteger;
 
 @Named("lambdahandler")
 public class S3EventHandlerLambda implements RequestHandler<S3Event, Void> {
@@ -40,8 +38,13 @@ public class S3EventHandlerLambda implements RequestHandler<S3Event, Void> {
         event.getRecords().forEach(record -> {
             String bucketName = record.getS3().getBucket().getName();
             String objectKey = record.getS3().getObject().getKey();
-            s3imgComp.compressS3File(bucketName,objectKey);
-            int currentCount = count.incrementAndGet();
+            boolean isValidImg = appUtil.validate(objectKey);
+            if(isValidImg){
+                s3imgComp.compressS3File(bucketName,objectKey);
+                int currentCount = count.incrementAndGet();
+            }else{
+                LOGGER.info("Invalid file ext for image compression skipping lambda for :"+objectKey);
+            }
         });
         return null;
     }

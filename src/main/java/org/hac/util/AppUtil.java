@@ -47,11 +47,6 @@ import software.amazon.awssdk.services.ssm.model.GetParameterRequest;
     @ConfigProperty(name = "s3.SRCBucketPrefix", defaultValue = "/pics/")
     private  String s3SRCBucketPrefix;
 
-  
-
-    @Inject
-    @ConfigProperty(name = "aws.region", defaultValue = "eu-west-1")
-    private  String awsRegion;
 
     @Inject
     @ConfigProperty(name = "img.compressionScale", defaultValue = "0.50")
@@ -61,10 +56,14 @@ import software.amazon.awssdk.services.ssm.model.GetParameterRequest;
     @ConfigProperty(name = " img.quality", defaultValue = "0.2")
     private  double imgQuality;
 
+    @Inject
+    @ConfigProperty(name = " img.validFileExtensions", defaultValue = "jpg, jpeg, png, gif, bmp, tiff, tif, webp, svg, raw, heic")
+    private String validFileExtensions;
+
     String configData = null;
 
 
-        private  Region region = Region.EU_WEST_1;
+        private  Region region = Region.of(System.getenv("AWS_REGION"));
         private AwsCredentialsProvider credentialsProvider;
           public S3Client s3client;
          SsmClient ssmClient;
@@ -98,17 +97,19 @@ import software.amazon.awssdk.services.ssm.model.GetParameterRequest;
     }
 
     public void readConfigData(){
+        String COMM_SEP = " | ";
         System.out.println("value from parameter Store :"+configData.length());
         if(configData != null && !configData.isEmpty()){
             try {
                  jsonNode = objectMapper.readTree(configData);
                  localCompressFolder = jsonNode.at("/lambda/localCOMPfolder").asText();
-                 awsRegion = jsonNode.at("/aws/region").asText();
                  compressionScale = jsonNode.at("/img/compressionScale").asDouble();
                  imgQuality = jsonNode.at("/img/quality").asDouble();
                  destBucketPrefix = jsonNode.at("/s3/destBucketPrefix").asText();
                  s3DestBucketName = jsonNode.at("/s3/destBucketName").asText();
-                System.out.println("from SSM JSON: "+localCompressFolder + " | " + compressionScale + " | " + imgQuality);
+                 s3SRCBucketPrefix = jsonNode.at("/s3/SRCBucketPrefix").asText();
+                 validFileExtensions = jsonNode.at("/img/validFileExtensions").asText();
+                System.out.println("from SSM JSON: "+localCompressFolder + COMM_SEP + compressionScale + COMM_SEP + imgQuality + COMM_SEP +s3SRCBucketPrefix);
             } catch (JsonProcessingException e) {
                
                 e.printStackTrace();
@@ -120,7 +121,13 @@ import software.amazon.awssdk.services.ssm.model.GetParameterRequest;
         return jsonNode.at(path).asText();
     }
 
+    public String getValidFileExtensions() {
+        return validFileExtensions;
+    }
 
+    public void setValidFileExtensions(String validFileExtensions) {
+        this.validFileExtensions = validFileExtensions;
+    }
 
  public String getLocalCompressFolder() {
         return localCompressFolder;
@@ -162,14 +169,6 @@ import software.amazon.awssdk.services.ssm.model.GetParameterRequest;
         s3SRCBucketPrefix = s3srcBucketPrefix;
     }
 
-    public String getAwsRegion() {
-        return awsRegion;
-    }
-
-    public void setAwsRegion(String awsRegion) {
-        this.awsRegion = awsRegion;
-    }
-
     public double getCompressionScale() {
         return compressionScale;
     }
@@ -194,5 +193,19 @@ import software.amazon.awssdk.services.ssm.model.GetParameterRequest;
         this.destBucketPrefix = destBucketPrefix;
     }
 
+    /* 
+     * function to validate keyName is a valid imagefile e.g uploads/prog1/someimg.jpeg 
+     * returns false if it is not a valid file e.g uploads/prog1/ or uploads/prog1/file.pdf
+    */
+    public boolean validate(String keyName){
+
+        String[] validFileExtensionsArr = validFileExtensions.split(",");
+        for(int i=0;i<validFileExtensionsArr.length;i++){
+            if(keyName.endsWith(validFileExtensionsArr[i].trim())){
+                return true;
+            }
+        }
+        return false;
+    }
 
 }

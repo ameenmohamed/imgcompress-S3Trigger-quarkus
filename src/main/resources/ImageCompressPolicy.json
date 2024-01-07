@@ -1,0 +1,34 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": [
+                "ssm:GetParameterHistory",
+                "s3:RestoreObject",
+                "s3:ListBucket",
+                "ssm:GetParameters",
+                "ssm:GetParameter",
+                "ssm:GetManifest",
+                "s3:ListTagsForResource",
+                "s3:PutObject",
+                "s3:GetObject",
+                "ssm:DescribeParameters",
+                "ssm:ListTagsForResource",
+                "s3:GetObjectTagging",
+                "ssm:GetParametersByPath"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:PutLogEvents"
+            ],
+            "Resource": "arn:aws:logs:*:*:*"
+        }
+    ]
+}
