@@ -46,7 +46,7 @@ case $choice in
                    --role $FUNCTION_ROLE \
                    --runtime $FUNCTION_RUNTIME \
                    --memory-size  $FUNCTION_MEM \
-                   --environment '{"Variables":{"ssmConfigKey":"/hac/lambda/imgcompress-S3Trigger-quarkus/config"}}' \
+                   --environment '{"Variables":{"ssmConfigKey":"/hac/lambda/'$FUNCTION_NAME'/config"}}' \
                    #--profile awf \
         ;;
     *)
