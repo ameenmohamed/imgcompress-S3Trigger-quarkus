@@ -122,7 +122,10 @@ public class S3ImageCompress {
         }catch (Exception e){
             System.out.println(e.getMessage());
         }
-        System.out.println("getFileFromS3 took: "+TimeUnit.MILLISECONDS.toMillis(System.currentTimeMillis() - startTime));
+        long duratn  = TimeUnit.MILLISECONDS.toMillis(System.currentTimeMillis() - startTime);
+        System.out.println("getFileFromS3 took: "+duratn);
+        metricsLogger.putMetric("S3Get", duratn, Unit.MILLISECONDS);
+        metricsLogger.flush();
         return myFile;
     }
 
@@ -162,7 +165,12 @@ public class S3ImageCompress {
       double spaceDifferenceMB = spaceDifferenceMB( new File(destFile).length(),s3File.length());
        metricsLogger.putMetric("DiskSpaceSaved", spaceDifferenceMB, Unit.MEGABYTES);
         metricsLogger.flush();
-      System.out.println("compressLocalFile took: "+TimeUnit.MILLISECONDS.toMillis(System.currentTimeMillis() - startTime)+ "Mills");
+        
+        long duratn  = TimeUnit.MILLISECONDS.toMillis(System.currentTimeMillis() - startTime);
+        System.out.println("FileCompressionTime took: "+duratn);
+        metricsLogger.putMetric("FileCompressionTime", duratn, Unit.MILLISECONDS);
+        metricsLogger.flush();
+       System.out.println("compressLocalFile took: "+duratn+ "Mills");
         return destFile;
     }
 
@@ -183,7 +191,11 @@ public class S3ImageCompress {
 
         PutObjectResponse putResponse = appUtil.s3client.putObject(putRequest, Paths.get(compS3File));
         System.out.println("eTag : "+putResponse.eTag());
-        System.out.println("updateS3 took: "+TimeUnit.MILLISECONDS.toMillis(System.currentTimeMillis() - startTime));
+         long duratn  = TimeUnit.MILLISECONDS.toMillis(System.currentTimeMillis() - startTime);
+        System.out.println("WriteToS3 took: "+duratn);
+        metricsLogger.putMetric("WriteToS3", duratn, Unit.MILLISECONDS);
+        metricsLogger.flush();
+       
         if (putResponse == null) return false;
         else {
             System.out.println("OG File Deleted:"+ ogFile.delete() + "Compressed File Delete:"+ new File(compS3File).delete());
